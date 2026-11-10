@@ -1,0 +1,7 @@
+{
+  "name": "BugSnap: Universal AI Debugger & Refactor Workbench",
+  "description": "Multimodal AI debugger and refactor workbench for Web UI layout collisions, C/C++ memory crashes, and logic systems with visual diffs and sandboxed verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

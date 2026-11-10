@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BugSnap: Universal AI Debugger & Refactor Workbench</title>
+  <meta name="description" content="Universal AI Multimodal Debugger and Refactor Workbench for Web UI, C/C++, and Logic Systems.">
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#070a13',
+              900: '#0c1222',
+              850: '#11182c',
+              800: '#17223b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #070a13; }
+    pre, code, textarea.code-font, .mono { font-family: 'JetBrains Mono', monospace; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c1222; }
+    ::-webkit-scrollbar-thumb { background: #263353; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col bg-[#070a13]">
+
+  <!-- Top Navigation & Demo Switcher -->
+  <header class="border-b border-slate-800 bg-[#0c1222]/90 backdrop-blur sticky top-0 z-40 px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-500 to-emerald-400 p-[1.5px] shadow-lg shadow-indigo-500/20">
+        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+          <i data-lucide="scan-search" class="w-5 h-5 text-indigo-400"></i>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">BugSnap</span>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">AI Debugger</span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">Universal AI Debugger &amp; Refactor Workbench</p>
+      </div>
+
+      <!-- Hackathon Track Badge -->
+      <div class="ml-2 hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Hackathon Track: Technology
+      </div>
+    </div>
+
+    <!-- Demo Switcher & Controls -->
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-lg px-2.5 py-1.5">
+        <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+        <label for="demo-select" class="text-xs font-medium text-slate-300">Instant Demo:</label>
+        <select id="demo-select" class="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer pr-1">
+          <option value="1: UI Flexbox Collision">1: UI Flexbox Collision</option>
+          <option value="2: C++ Pointer Segfault">2: C++ Pointer Segfault</option>
+          <option value="3: Python Null Reference">3: Python Null Reference</option>
+        </select>
+      </div>
+
+      <button id="btn-export-standalone" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition" title="Export this single-file HTML application">
+        <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span>Download HTML</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Multi-Mode Selector Tabs -->
+  <nav class="border-b border-slate-800/80 bg-slate-950/60 px-4 py-2 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <button id="tab-web" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-sm shadow-indigo-500/10">
+        <i data-lucide="layout" class="w-4 h-4 text-indigo-400"></i>
+        <span>Web UI &amp; Layout Debugger</span>
+      </button>
+      <button id="tab-systems" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent">
+        <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
+        <span>C/C++ &amp; Logic Systems Debugger</span>
+      </button>
+    </div>
+    <div class="text-[11px] text-slate-400 hidden lg:flex items-center gap-3">
+      <span class="flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i> Zero-backend needed</span>
+      <span class="flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-400"></i> AST &amp; Visual Synthesis</span>
+    </div>
+  </nav>
+
+  <!-- Main Split Layout Workspace -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 max-w-[1920px] mx-auto w-full">
+    
+    <!-- LEFT PANE: Inputs -->
+    <section class="flex flex-col gap-3.5 bg-slate-900/60 border border-slate-800/90 rounded-2xl p-4 shadow-xl">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="file-input" class="w-4 h-4 text-indigo-400"></i>
+          <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Multimodal Input Workspace</h2>
+        </div>
+        <span id="input-lang-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-indigo-300 border border-slate-700">HTML / CSS</span>
+      </div>
+
+      <!-- Image Dropzone / Canvas Upload -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="image" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>Visual Artifact (Screenshot / Terminal Crash / Layout Collision)</span>
+          </label>
+          <span class="text-[10px] text-slate-400">Paste (Ctrl+V) or Drop</span>
+        </div>
+        
+        <div id="dropzone" class="relative group border-2 border-dashed border-slate-700/80 hover:border-indigo-500/80 rounded-xl bg-slate-950/60 transition p-3 flex flex-col items-center justify-center cursor-pointer min-h-[120px]">
+          <input type="file" id="file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+          
+          <div id="dropzone-empty" class="flex flex-col items-center text-center">
+            <i data-lucide="upload-cloud" class="w-7 h-7 text-slate-500 group-hover:text-indigo-400 transition mb-1"></i>
+            <p class="text-xs text-slate-300 font-medium">Click, drop screenshot, or press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-indigo-300 border border-slate-700">Ctrl+V</kbd></p>
+            <p class="text-[10px] text-slate-500 mt-0.5">Captures UI misalignment, compiler crash dumps, or memory faults</p>
+          </div>
+
+          <div id="dropzone-preview-container" class="w-full flex items-center gap-3 hidden">
+            <img id="image-preview" src="" alt="Bug Screenshot" class="h-20 max-w-[140px] object-cover rounded-lg border border-slate-700 shadow-md">
+            <div class="flex-1 min-w-0">
+              <p id="image-title" class="text-xs font-medium text-slate-200 truncate">screenshot.png</p>
+              <p class="text-[10px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5">
+                <i data-lucide="check" class="w-3 h-3"></i> Artifact attached for AI analysis
+              </p>
+              <button type="button" id="btn-remove-image" class="mt-2 text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 z-20">
+                <i data-lucide="trash-2" class="w-3 h-3"></i> Remove Image
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Console / Terminal Log Textarea -->
+      <div class="flex-1 flex flex-col min-h-[110px]">
+        <div class="flex items-center justify-between mb-1.5">
+          <label for="input-logs" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="terminal" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Console / Terminal Logs / Stack Traces</span>
+          </label>
+          <button id="btn-clear-logs" class="text-[10px] text-slate-400 hover:text-slate-200 transition">Clear</button>
+        </div>
+        <textarea id="input-logs" class="w-full flex-1 min-h-[90px] p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 focus:border-amber-500/60 focus:outline-none text-xs text-amber-200/90 font-mono resize-y leading-relaxed" placeholder="Paste runtime stack traces, compiler errors, or browser console warnings..."></textarea>
+      </div>
+
+      <!-- Source Code Editor Textarea -->
+      <div class="flex-[2] flex flex-col min-h-[220px]">
+        <div class="flex items-center justify-between mb-1.5">
+          <label for="input-code" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="code-2" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>Source Code Editor</span>
+          </label>
+          <span id="code-stats" class="text-[10px] text-slate-400 font-mono">0 lines</span>
+        </div>
+        <div class="relative flex-1 flex flex-col">
+          <textarea id="input-code" class="w-full flex-1 min-h-[180px] p-3 rounded-xl bg-slate-950/90 border border-slate-800 focus:border-indigo-500/60 focus:outline-none text-xs text-slate-200 font-mono resize-y leading-relaxed" placeholder="Paste original source code with bug..."></textarea>
+        </div>
+      </div>
+
+      <!-- Primary Action Button with Loading Steps -->
+      <div class="pt-2">
+        <button id="btn-analyze" class="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-600 hover:from-indigo-500 hover:via-blue-500 hover:to-emerald-500 transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span id="btn-analyze-text">Analyze &amp; Fix Bug</span>
+        </button>
+
+        <!-- Loading Reasoning Steps Progress -->
+        <div id="reasoning-container" class="hidden mt-3 p-3 rounded-xl bg-slate-950 border border-indigo-500/30">
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <span class="text-indigo-300 font-semibold flex items-center gap-1.5">
+              <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin text-indigo-400"></i>
+              Gemini Reasoning Engine:
+            </span>
+            <span id="reasoning-phase-percent" class="text-slate-400 font-mono text-[10px]">0%</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2">
+            <div id="reasoning-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300" style="width: 10%;"></div>
+          </div>
+          <p id="reasoning-step-text" class="text-[11px] text-slate-300 font-mono animate-pulse">1. Ingesting visual cues &amp; OCR telemetry...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANE: Outputs & Verification -->
+    <section class="flex flex-col gap-3.5 bg-slate-900/60 border border-slate-800/90 rounded-2xl p-4 shadow-xl">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Root Cause &amp; Verification</h2>
+        </div>
+        <div id="severity-container" class="flex items-center gap-2">
+          <span id="severity-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30">CRITICAL</span>
+        </div>
+      </div>
+
+      <!-- Root Cause Breakdown Card -->
+      <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 flex flex-col gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2">
+            <span id="bug-filename" class="font-mono text-indigo-300 font-medium bg-slate-900 px-2 py-0.5 rounded border border-slate-800">filename</span>
+            <span id="bug-category" class="text-slate-400">Category</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400 text-[11px]">Confidence: <strong id="bug-confidence" class="text-emerald-400 font-mono">99.4%</strong></span>
+            <span class="text-slate-400 text-[11px]">Est. Fix: <strong id="bug-fixtime" class="text-indigo-300 font-mono">&lt; 2 mins</strong></span>
+          </div>
+        </div>
+        <div class="text-xs text-slate-300 leading-relaxed">
+          <p id="bug-rootcause">Root cause explanation will appear here after analysis.</p>
+        </div>
+        <div class="mt-1 pt-2 border-t border-slate-800/80 flex items-start gap-1.5 text-xs text-emerald-300">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400"></i>
+          <p id="bug-remedy" class="text-[11px] text-emerald-300/90 font-medium">Remedy summary</p>
+        </div>
+      </div>
+
+      <!-- Code Diff / Patched Code Viewer -->
+      <div class="flex-1 flex flex-col bg-slate-950/90 border border-slate-800 rounded-xl overflow-hidden min-h-[220px]">
+        <div class="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-b border-slate-800 text-xs">
+          <div class="flex items-center gap-2">
+            <i data-lucide="git-pull-request" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span class="font-bold text-slate-200">Patched Code Diff</span>
+            <span id="diff-stats" class="text-[11px] font-mono text-slate-400 ml-1">
+              <span class="text-emerald-400">+5</span> / <span class="text-rose-400">-3</span>
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="btn-copy-patch" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-medium flex items-center gap-1 transition">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+              <span id="btn-copy-text">Copy Patch</span>
+            </button>
+            <button id="btn-apply-patch" class="px-2 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 text-[11px] font-medium flex items-center gap-1 transition">
+              <i data-lucide="check" class="w-3 h-3"></i>
+              <span>Apply to Editor</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Diff Viewer Body -->
+        <div id="diff-container" class="flex-1 overflow-auto p-2 font-mono text-xs max-h-[280px]">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Dynamic Verification Panel -->
+      <div id="verification-panel" class="flex-1 flex flex-col rounded-xl border border-slate-800 bg-slate-950 overflow-hidden min-h-[220px]">
+        <div class="flex items-center justify-between px-3 py-2 bg-slate-900 border-b border-slate-800 text-xs">
+          <div class="flex items-center gap-2">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span id="verification-title" class="font-bold text-slate-200">Dynamic Sandbox Verification</span>
+          </div>
+
+          <!-- UI Preview Viewport Toggles (Shown in Web mode) -->
+          <div id="ui-preview-controls" class="flex items-center gap-1">
+            <button id="btn-toggle-patched" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Patched View</button>
+            <button id="btn-toggle-buggy" class="px-2 py-0.5 rounded text-[10px] font-semibold text-slate-400 hover:text-slate-200 bg-slate-800">Buggy View</button>
+          </div>
+        </div>
+
+        <!-- Content Area: Sandboxed Iframe (Web Mode) OR Memory Register Table & Trace (Systems Mode) -->
+        <div class="flex-1 relative flex flex-col p-2 min-h-[180px]">
+          
+          <!-- Web Mode Iframe Container -->
+          <div id="iframe-container" class="w-full h-full flex flex-col">
+            <iframe id="sandbox-iframe" sandbox="allow-scripts" class="w-full flex-1 rounded-lg border border-slate-800 bg-slate-950"></iframe>
+          </div>
+
+          <!-- Systems Mode Memory Table & Execution Trace -->
+          <div id="systems-container" class="w-full h-full flex flex-col gap-3 hidden overflow-auto">
+            <!-- Memory Table -->
+            <div class="border border-slate-800 rounded-lg overflow-hidden">
+              <div class="bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                <span>Memory Register &amp; Pointer Table</span>
+                <span class="text-[10px] text-emerald-400 font-mono">Hardware Trap Prevented</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left font-mono text-[11px]">
+                  <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                      <th class="p-2">Register / Pointer</th>
+                      <th class="p-2">Address</th>
+                      <th class="p-2">Buggy State</th>
+                      <th class="p-2">Patched State</th>
+                      <th class="p-2">Safety Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="memory-table-body" class="divide-y divide-slate-800/60 text-slate-200">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Execution Step Trace -->
+            <div class="border border-slate-800 rounded-lg p-2.5 bg-slate-950">
+              <div class="text-[11px] font-bold text-slate-300 mb-2 flex items-center justify-between">
+                <span>Simulated Instruction Trace</span>
+                <span class="text-[10px] text-indigo-400">GDB / CPU Trace</span>
+              </div>
+              <div id="trace-steps-container" class="flex flex-col gap-1.5 font-mono text-[10px]">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Interactive JavaScript Engine packed entirely in single-file template -->
+  <script>
+    // PRESET DATA
+    const PRESETS = {"1: UI Flexbox Collision":{"id":"demo-ui-flexbox","title":"1: UI Flexbox Collision","filename":"src/components/DashboardGrid.html","language":"html","mode":"web","severity":"HIGH","category":"CSS Flexbox Overflow & Viewport Collision","confidence":99.4,"estimatedFixTime":"< 2 mins","rootCause":"The container `.stat-row` specifies `display: flex; gap: 16px;` without `flex-wrap: wrap;`. Each `.metric-card` defines a fixed `min-width: 260px;` and `overflow: hidden;` is missing on text containers. On screens < 640px or side-docked panels, child cards forcefully collide horizontally, protruding 110px past the parent boundary and obscuring action buttons.","remedySummary":"Injected `flex-wrap: wrap;` with dynamic `min-width: 0;` and responsive grid fallback. Added `flex-1 min-w-[200px] max-w-full` so cards wrap gracefully and prevent layout truncation on narrow viewports.","mockImageUrl":"data:image/svg+xml;utf8,%0A%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22340%22%20viewBox%3D%220%200%20600%20340%22%20fill%3D%22none%22%3E%0A%20%20%3Crect%20width%3D%22600%22%20height%3D%22340%22%20rx%3D%2212%22%20fill%3D%22%23090D16%22%2F%3E%0A%20%20%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%22598%22%20height%3D%22338%22%20rx%3D%2211%22%20stroke%3D%22%231E293B%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%0A%20%20%3C!--%20Window%20Header%20--%3E%0A%20%20%3Cpath%20d%3D%22M0%2012C0%205.37258%205.37258%200%2012%200H588C594.627%200%20600%205.37258%20600%2012V36H0V12Z%22%20fill%3D%22%230F172A%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%23EF4444%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2240%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%23F59E0B%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2256%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%2310B981%22%2F%3E%0A%20%20%3Ctext%20x%3D%2280%22%20y%3D%2222%22%20fill%3D%22%2364748B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3Eviewport%3A%20375px%20(Mobile%20Emulation)%20%E2%80%94%20Flexbox%20Boundary%20Breach%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Container%20Bounds%20Outline%20--%3E%0A%20%20%3Crect%20x%3D%2230%22%20y%3D%2255%22%20width%3D%22360%22%20height%3D%22255%22%20rx%3D%228%22%20fill%3D%22%230B132B%22%20stroke%3D%22%233B82F6%22%20stroke-dasharray%3D%224%204%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3Ctext%20x%3D%2238%22%20y%3D%2274%22%20fill%3D%22%2360A5FA%22%20font-family%3D%22sans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22bold%22%3EParent%20Container%3A%20.metrics-card-row%20%5Bmax-width%3A%20360px%5D%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Card%201%20(Normal)%20--%3E%0A%20%20%3Crect%20x%3D%2245%22%20y%3D%2290%22%20width%3D%22165%22%20height%3D%22100%22%20rx%3D%226%22%20fill%3D%22%231E293B%22%20stroke%3D%22%23334155%22%2F%3E%0A%20%20%3Ctext%20x%3D%2257%22%20y%3D%22115%22%20fill%3D%22%2394A3B8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2211%22%3EActive%20Nodes%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2257%22%20y%3D%22145%22%20fill%3D%22%2338BDF8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20font-weight%3D%22bold%22%3E1%2C842%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2257%22%20y%3D%22170%22%20fill%3D%22%2310B981%22%20font-family%3D%22sans-serif%22%20font-size%3D%2210%22%3E%2B12.4%25%20vs%20last%20hr%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Card%202%20(Colliding%20%2F%20Overflowing)%20--%3E%0A%20%20%3Crect%20x%3D%22220%22%20y%3D%2290%22%20width%3D%22220%22%20height%3D%22100%22%20rx%3D%226%22%20fill%3D%22%231E293B%22%20stroke%3D%22%23EF4444%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3Ctext%20x%3D%22232%22%20y%3D%22115%22%20fill%3D%22%2394A3B8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2211%22%3ECluster%20Throughput%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%22232%22%20y%3D%22145%22%20fill%3D%22%23F43F5E%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20font-weight%3D%22bold%22%3E98.4%20GB%2Fs%3C%2Ftext%3E%0A%20%20%0A%20%20%3C!--%20Red%20Collision%20Indicator%20Marker%20--%3E%0A%20%20%3Crect%20x%3D%22375%22%20y%3D%2280%22%20width%3D%2285%22%20height%3D%22120%22%20rx%3D%224%22%20fill%3D%22%23EF4444%22%20fill-opacity%3D%220.15%22%20stroke%3D%22%23EF4444%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%223%203%22%2F%3E%0A%20%20%3Cpath%20d%3D%22M375%2075L375%20210%22%20stroke%3D%22%23EF4444%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3Ctext%20x%3D%22390%22%20y%3D%22135%22%20fill%3D%22%23F87171%22%20font-family%3D%22sans-serif%22%20font-size%3D%2210%22%20font-weight%3D%22bold%22%3EOVERFLOW%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%22390%22%20y%3D%22148%22%20fill%3D%22%23FCA5A5%22%20font-family%3D%22sans-serif%22%20font-size%3D%229%22%3E%2B80px%20clipped%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Collision%20Annotation%20Pill%20--%3E%0A%20%20%3Crect%20x%3D%22180%22%20y%3D%22215%22%20width%3D%22260%22%20height%3D%2240%22%20rx%3D%226%22%20fill%3D%22%23450A0A%22%20stroke%3D%22%23DC2626%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%22200%22%20cy%3D%22235%22%20r%3D%228%22%20fill%3D%22%23EF4444%22%2F%3E%0A%20%20%3Ctext%20x%3D%22197%22%20y%3D%22239%22%20fill%3D%22%23FFFFFF%22%20font-family%3D%22sans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22bold%22%3E!%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%22216%22%20y%3D%22232%22%20fill%3D%22%23FCA5A5%22%20font-family%3D%22sans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22bold%22%3EFlex%20collision%20detected%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%22216%22%20y%3D%22246%22%20fill%3D%22%23FECACA%22%20font-family%3D%22sans-serif%22%20font-size%3D%229%22%3ECards%20enforce%20min-w%3A220px%20without%20flex-wrap%3C%2Ftext%3E%0A%0A%20%20%3Crect%20x%3D%2245%22%20y%3D%22265%22%20width%3D%22130%22%20height%3D%2232%22%20rx%3D%224%22%20fill%3D%22%233B82F6%22%2F%3E%0A%20%20%3Ctext%20x%3D%2275%22%20y%3D%22285%22%20fill%3D%22%23FFFFFF%22%20font-family%3D%22sans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22bold%22%3EInspect%20DOM%3C%2Ftext%3E%0A%3C%2Fsvg%3E%0A","mockImageTitle":"Mobile Viewport Inspection Screenshot (Flex Collision & Overflow)","logs":"[LayoutEngine] Warning: CSS flex item exceeds parent boundary container .stat-row (container width: 360px, computed cards width: 536px)\n[LayoutEngine] Horizontal overflow clipped: child element .metric-card-2 causing horizontal overlap with action bar\n[ViewportInspector] Layout shift score (CLS): 0.428 (exceeds Google Web Vitals threshold of 0.1)\n[Accessibility] Element <button class=\"action-btn\"> has an overlapping bounding rect with .stat-card (element cannot receive click)","buggyCode":"<!-- Buggy Flexbox Component: Container Collides on Mobile/Narrow Screens -->\n<div class=\"metrics-dashboard\" style=\"max-width: 380px; padding: 16px; background: #0f172a; border-radius: 12px; font-family: system-ui;\">\n  <h2 style=\"color: #f8fafc; font-size: 16px; margin-bottom: 12px;\">Infrastructure Overview</h2>\n  \n  <!-- BUG: display:flex without flex-wrap causes cards with min-width: 220px to collide and overflow -->\n  <div class=\"stat-row\" style=\"display: flex; gap: 16px; width: 100%;\">\n    \n    <div class=\"metric-card\" style=\"min-width: 220px; background: #1e293b; padding: 14px; border-radius: 8px; border: 1px solid #334155;\">\n      <span style=\"color: #94a3b8; font-size: 12px;\">Active Compute</span>\n      <div style=\"color: #38bdf8; font-size: 24px; font-weight: bold; margin-top: 4px;\">1,842 nodes</div>\n      <div style=\"color: #10b981; font-size: 11px; margin-top: 4px;\">+12.4% vs last hr</div>\n    </div>\n\n    <div class=\"metric-card\" style=\"min-width: 220px; background: #1e293b; padding: 14px; border-radius: 8px; border: 1px solid #ef4444;\">\n      <span style=\"color: #94a3b8; font-size: 12px;\">Throughput</span>\n      <div style=\"color: #f43f5e; font-size: 24px; font-weight: bold; margin-top: 4px;\">98.4 GB/s</div>\n      <div style=\"color: #f87171; font-size: 11px; margin-top: 4px;\">Overflowing Boundary</div>\n    </div>\n\n  </div>\n\n  <div style=\"margin-top: 16px; display: flex; justify-content: flex-end;\">\n    <button style=\"background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;\">\n      Deploy Cluster\n    </button>\n  </div>\n</div>","patchedCode":"<!-- Patched Responsive Component: Fluid Flexbox with Auto-Wrapping & min-w-0 -->\n<div class=\"metrics-dashboard\" style=\"max-width: 380px; padding: 16px; background: #0f172a; border-radius: 12px; font-family: system-ui;\">\n  <h2 style=\"color: #f8fafc; font-size: 16px; margin-bottom: 12px;\">Infrastructure Overview</h2>\n  \n  <!-- PATCHED: flex-wrap: wrap ensures responsive reflow without horizontal collision -->\n  <div class=\"stat-row\" style=\"display: flex; flex-wrap: wrap; gap: 12px; width: 100%;\">\n    \n    <div class=\"metric-card\" style=\"flex: 1 1 160px; min-width: 0; background: #1e293b; padding: 14px; border-radius: 8px; border: 1px solid #334155;\">\n      <span style=\"color: #94a3b8; font-size: 12px;\">Active Compute</span>\n      <div style=\"color: #38bdf8; font-size: 24px; font-weight: bold; margin-top: 4px;\">1,842 nodes</div>\n      <div style=\"color: #10b981; font-size: 11px; margin-top: 4px;\">+12.4% vs last hr</div>\n    </div>\n\n    <div class=\"metric-card\" style=\"flex: 1 1 160px; min-width: 0; background: #1e293b; padding: 14px; border-radius: 8px; border: 1px solid #10b981;\">\n      <span style=\"color: #94a3b8; font-size: 12px;\">Throughput</span>\n      <div style=\"color: #34d399; font-size: 24px; font-weight: bold; margin-top: 4px;\">98.4 GB/s</div>\n      <div style=\"color: #6ee7b7; font-size: 11px; margin-top: 4px;\">Optimal Bounds Safe</div>\n    </div>\n\n  </div>\n\n  <div style=\"margin-top: 16px; display: flex; justify-content: flex-end;\">\n    <button style=\"background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;\">\n      Deploy Cluster (Verified)\n    </button>\n  </div>\n</div>","interactiveBuggyHtml":"<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { background: #030712; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }\n  .wrapper { width: 340px; border: 2px dashed #ef4444; padding: 12px; background: #090d16; border-radius: 12px; position: relative; }\n  .badge { position: absolute; top: -10px; right: 12px; background: #ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: bold; }\n  .stat-row { display: flex; gap: 12px; }\n  .card { min-width: 210px; background: #1e293b; padding: 14px; border-radius: 8px; border: 1px solid #334155; }\n  .card.error { border-color: #ef4444; background: #271216; }\n</style>\n</head>\n<body>\n  <div class=\"wrapper\">\n    <div class=\"badge\">COLLISION BUG</div>\n    <p style=\"color: #94a3b8; font-size: 11px; margin-bottom: 8px;\">Simulated Mobile Container [Width: 340px]</p>\n    <div class=\"stat-row\">\n      <div class=\"card\">\n        <div style=\"color: #94a3b8; font-size: 11px;\">Active Nodes</div>\n        <div style=\"color: #38bdf8; font-size: 20px; font-weight: bold; margin-top: 2px;\">1,842</div>\n      </div>\n      <div class=\"card error\">\n        <div style=\"color: #f87171; font-size: 11px;\">Throughput (Clipped)</div>\n        <div style=\"color: #f43f5e; font-size: 20px; font-weight: bold; margin-top: 2px;\">98.4 GB/s</div>\n      </div>\n    </div>\n  </div>\n</body>\n</html>","interactivePatchedHtml":"<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { background: #030712; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }\n  .wrapper { width: 340px; border: 2px solid #10b981; padding: 12px; background: #090d16; border-radius: 12px; position: relative; }\n  .badge { position: absolute; top: -10px; right: 12px; background: #10b981; color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: bold; }\n  .stat-row { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }\n  .card { flex: 1 1 130px; min-width: 0; background: #1e293b; padding: 14px; border-radius: 8px; border: 1px solid #10b981; }\n</style>\n</head>\n<body>\n  <div class=\"wrapper\">\n    <div class=\"badge\">PATCHED &amp; VERIFIED</div>\n    <p style=\"color: #94a3b8; font-size: 11px; margin-bottom: 8px;\">Simulated Mobile Container [Width: 340px - Wrapped Cleanly]</p>\n    <div class=\"stat-row\">\n      <div class=\"card\">\n        <div style=\"color: #94a3b8; font-size: 11px;\">Active Nodes</div>\n        <div style=\"color: #38bdf8; font-size: 20px; font-weight: bold; margin-top: 2px;\">1,842</div>\n      </div>\n      <div class=\"card\">\n        <div style=\"color: #94a3b8; font-size: 11px;\">Throughput</div>\n        <div style=\"color: #34d399; font-size: 20px; font-weight: bold; margin-top: 2px;\">98.4 GB/s</div>\n      </div>\n    </div>\n  </div>\n</body>\n</html>"},"2: C++ Pointer Segfault":{"id":"demo-cpp-segfault","title":"2: C++ Pointer Segfault","filename":"src/network/packet_parser.cpp","language":"cpp","mode":"systems","severity":"CRITICAL","category":"Memory Safety & Null Pointer Dereference","confidence":99.8,"estimatedFixTime":"< 4 mins","rootCause":"In `parse_telemetry_payload()`, the function dereferences `header->message_id` on line 42 without checking if `header == nullptr`. When network packets arrive truncated or corrupted from UDP ring buffers, `header` is initialized to 0x0. The CPU generates a hardware trap SIGSEGV (Signal 11) trying to access unmapped physical page 0x0.","remedySummary":"Added immediate `nullptr` guard check, enforced payload byte size boundary check (`len < sizeof(TelemetryHeader)`), and returned strongly typed `ParseResult::ERR_CORRUPT_PAYLOAD` with RAII memory safety.","mockImageUrl":"data:image/svg+xml;utf8,%0A%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22340%22%20viewBox%3D%220%200%20600%20340%22%20fill%3D%22none%22%3E%0A%20%20%3Crect%20width%3D%22600%22%20height%3D%22340%22%20rx%3D%2212%22%20fill%3D%22%23050811%22%2F%3E%0A%20%20%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%22598%22%20height%3D%22338%22%20rx%3D%2211%22%20stroke%3D%22%231E293B%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%0A%20%20%3C!--%20Terminal%20Header%20--%3E%0A%20%20%3Cpath%20d%3D%22M0%2012C0%205.37258%205.37258%200%2012%200H588C594.627%200%20600%205.37258%20600%2012V36H0V12Z%22%20fill%3D%22%230A0F1D%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%23EF4444%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2240%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%23F59E0B%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2256%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%2310B981%22%2F%3E%0A%20%20%3Ctext%20x%3D%2280%22%20y%3D%2222%22%20fill%3D%22%2364748B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3Egdb%20.%2Fbin%2Fpacket_router%20(PID%204812)%20%E2%80%94%20Crash%20Signal%20Dump%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Crash%20Dump%20Lines%20--%3E%0A%20%20%3Ctext%20x%3D%2225%22%20y%3D%2265%22%20fill%3D%22%2394A3B8%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E%24%20.%2Fbin%2Fpacket_router%20--threads%3D4%20--port%3D8080%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2225%22%20y%3D%2285%22%20fill%3D%22%2338BDF8%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E%5BINFO%5D%20Telemetry%20Ingestion%20Engine%20v2.4%20initialized.%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2225%22%20y%3D%22105%22%20fill%3D%22%2338BDF8%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E%5BINFO%5D%20Inbound%20UDP%20buffer%20stream%3A%20128%20MB%20mapped%20at%200x7ffeeb42a000%3C%2Ftext%3E%0A%20%20%0A%20%20%3C!--%20Segfault%20Highlight%20Box%20--%3E%0A%20%20%3Crect%20x%3D%2218%22%20y%3D%22120%22%20width%3D%22564%22%20height%3D%2265%22%20rx%3D%226%22%20fill%3D%22%233F0B0B%22%20stroke%3D%22%23DC2626%22%20stroke-width%3D%221.5%22%2F%3E%0A%20%20%3Ctext%20x%3D%2230%22%20y%3D%22142%22%20fill%3D%22%23F87171%22%20font-family%3D%22monospace%22%20font-size%3D%2212%22%20font-weight%3D%22bold%22%3EFatal%20Error%3A%20SIGSEGV%20(Signal%2011%3A%20Segmentation%20fault)%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2230%22%20y%3D%22160%22%20fill%3D%22%23FCA5A5%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3EFaulting%20Address%3A%200x0000000000000000%20(Attempted%20read%20at%20NULL)%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2230%22%20y%3D%22175%22%20fill%3D%22%23FECACA%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%3ERIP%3A%200x00000000004012e4%20in%20parse_telemetry_payload%20(packet_parser.cpp%3A42)%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Stack%20Trace%20--%3E%0A%20%20%3Ctext%20x%3D%2225%22%20y%3D%22210%22%20fill%3D%22%23F59E0B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E%230%20%200x004012e4%20in%20parse_telemetry_payload%20(header%3D0x0%2C%20len%3D1024)%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2245%22%20y%3D%22226%22%20fill%3D%22%23E2E8F0%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E%26gt%3B%2042%3A%20int%20msg_id%20%3D%20header-%26gt%3Bmessage_id%3B%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2225%22%20y%3D%22246%22%20fill%3D%22%2394A3B8%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E%231%20%200x00401490%20in%20dispatch_event%20(buf%3D0x7ffeeb42a000)%20at%20main.cpp%3A118%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2225%22%20y%3D%22266%22%20fill%3D%22%2394A3B8%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E%232%20%200x00401820%20in%20worker_thread_loop%20(arg%3D0x1)%20at%20thread_pool.cpp%3A64%3C%2Ftext%3E%0A%20%20%0A%20%20%3Crect%20x%3D%2225%22%20y%3D%22285%22%20width%3D%22280%22%20height%3D%2228%22%20rx%3D%224%22%20fill%3D%22%231E293B%22%2F%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22303%22%20fill%3D%22%23A7F3D0%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3ECore%20dump%20saved%20to%20%2Ftmp%2Fcore.4812%3C%2Ftext%3E%0A%3C%2Fsvg%3E%0A","mockImageTitle":"GDB Crash Trace & Core Dump Telemetry (SIGSEGV Signal 11)","logs":"Program received signal SIGSEGV, Segmentation fault.\n0x00000000004012e4 in parse_telemetry_payload (header=0x0, len=1024) at packet_parser.cpp:42\n42        int packet_id = header->message_id; // CRASH: header is nullptr\n[Thread 1 (LWP 4812) exited with code 139 (SIGSEGV)]\n#0  0x00000000004012e4 in parse_telemetry_payload (header=0x0, len=1024) at packet_parser.cpp:42\n#1  0x0000000000401490 in dispatch_event (buf=0x7ffeeb42a000) at main.cpp:118\n#2  0x0000000000401820 in worker_thread_loop (arg=0x1) at thread_pool.cpp:64","buggyCode":"// Buggy C++ Implementation: Raw pointer dereference without null boundary validation\n#include <iostream>\n#include <cstdint>\n\nstruct TelemetryHeader {\n    uint32_t message_id;\n    uint32_t sequence_num;\n    uint32_t payload_size;\n};\n\nenum ParseStatus { SUCCESS = 0, ERR_CORRUPT = -1 };\n\nParseStatus parse_telemetry_payload(const TelemetryHeader* header, size_t len) {\n    // CRITICAL BUG: Dereferencing header without verifying != nullptr\n    // When incoming UDP socket receives 0 bytes or corrupted packet, header is null!\n    int packet_id = header->message_id; // <-- HARD CRASH: SIGSEGV at 0x00000000\n    \n    if (len < header->payload_size) {\n        return ERR_CORRUPT;\n    }\n\n    std::cout << \"Processing packet #\" << packet_id << \" (len: \" << len << \")\\n\";\n    return SUCCESS;\n}","patchedCode":"// Patched C++ Implementation: Defensive Pointer Validation & Bounds Safety\n#include <iostream>\n#include <cstdint>\n#include <span>\n#include <optional>\n\nstruct TelemetryHeader {\n    uint32_t message_id;\n    uint32_t sequence_num;\n    uint32_t payload_size;\n};\n\nenum class ParseStatus { \n    SUCCESS = 0, \n    ERR_NULL_HEADER = -1, \n    ERR_BUFFER_OVERRUN = -2 \n};\n\nParseStatus parse_telemetry_payload(const TelemetryHeader* header, size_t len) {\n    // FIX: Verify pointer address before any memory access\n    if (header == nullptr) {\n        std::cerr << \"[CRITICAL] Rejected null telemetry header at 0x0!\\n\";\n        return ParseStatus::ERR_NULL_HEADER;\n    }\n\n    // FIX: Verify minimum buffer size before dereferencing payload_size\n    if (len < sizeof(TelemetryHeader)) {\n        std::cerr << \"[WARN] Packet buffer length (\" << len << \"B) smaller than header size\\n\";\n        return ParseStatus::ERR_BUFFER_OVERRUN;\n    }\n\n    uint32_t packet_id = header->message_id;\n    if (len < sizeof(TelemetryHeader) + header->payload_size) {\n        return ParseStatus::ERR_BUFFER_OVERRUN;\n    }\n\n    std::cout << \"Successfully parsed packet #\" << packet_id << \" (safe payload len: \" << len << \")\\n\";\n    return ParseStatus::SUCCESS;\n}","memoryRegisters":[{"name":"header ($RDI)","address":"0x0000000000000000","buggyValue":"0x0 (NULL POINTER)","patchedValue":"0x7ffeeb42a040 (VALID HEAP ADDR)","status":"VIOLATION","description":"Pointer register dereferenced while pointing to unmapped page 0."},{"name":"$RAX (Return)","address":"0x7fffffffe008","buggyValue":"SIGSEGV (Code 139)","patchedValue":"0x0 (ParseStatus::SUCCESS)","status":"MUTATED","description":"CPU return register indicating process exit code."},{"name":"header->message_id","address":"0x0000000000000000","buggyValue":"TRAP / ACCESS VIOLATION","patchedValue":"0x0000104A (ID #4170)","status":"VIOLATION","description":"Target struct field offset +0x0 inside TelemetryHeader."},{"name":"len ($RSI)","address":"0x7fffffffe010","buggyValue":"1024 bytes (unchecked)","patchedValue":"1024 bytes (bounds checked >= 12B)","status":"SAFE","description":"Payload length register passed from network layer."}],"executionTrace":[{"step":1,"instruction":"call parse_telemetry_payload","location":"main.cpp:118","state":"NORMAL","detail":"Stack frame pushed; $RDI assigned from socket buffer parser."},{"step":2,"instruction":"test %rdi, %rdi","location":"packet_parser.cpp:18","state":"WARN","detail":"Original code omitted pointer test. Patched code evaluates %rdi == 0."},{"step":3,"instruction":"mov (%rdi), %eax","location":"packet_parser.cpp:42","state":"FAULT","detail":"Original: Attempted 32-bit load from address 0x0. Hardware Page Fault triggered."},{"step":4,"instruction":"je .L_ERR_NULL_HEADER","location":"packet_parser.cpp:21","state":"RECOVERED","detail":"Patched: Jump taken to safe error handling block. No hardware trap invoked."}]},"3: Python Null Reference":{"id":"demo-python-null","title":"3: Python Null Reference","filename":"services/analytics_pipeline.py","language":"python","mode":"systems","severity":"HIGH","category":"Dynamic Type AttributeError & Unhandled NoneType","confidence":98.7,"estimatedFixTime":"< 3 mins","rootCause":"In `process_event_batch()`, the statement `payload[\"user_profile\"].get(\"tier\", \"free\")` assumes `user_profile` is always a populated dictionary. In guest or anonymous user events, `\"user_profile\"` is explicitly `None`. Invoking `.get()` on a `NoneType` object raises an unhandled `AttributeError`, causing downstream batch processing workers to crash.","remedySummary":"Implemented safe dictionary chaining with fallback defaults: `(payload.get(\"user_profile\") or {}).get(\"tier\", \"free\")` and added pydantic/dataclass schema verification before metric emission.","mockImageUrl":"data:image/svg+xml;utf8,%0A%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22340%22%20viewBox%3D%220%200%20600%20340%22%20fill%3D%22none%22%3E%0A%20%20%3Crect%20width%3D%22600%22%20height%3D%22340%22%20rx%3D%2212%22%20fill%3D%22%23070A13%22%2F%3E%0A%20%20%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%22598%22%20height%3D%22338%22%20rx%3D%2211%22%20stroke%3D%22%231E293B%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%0A%20%20%3C!--%20Header%20--%3E%0A%20%20%3Cpath%20d%3D%22M0%2012C0%205.37258%205.37258%200%2012%200H588C594.627%200%20600%205.37258%20600%2012V36H0V12Z%22%20fill%3D%22%230C1322%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%23EF4444%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2240%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%23F59E0B%22%2F%3E%0A%20%20%3Ccircle%20cx%3D%2256%22%20cy%3D%2218%22%20r%3D%225%22%20fill%3D%22%2310B981%22%2F%3E%0A%20%20%3Ctext%20x%3D%2280%22%20y%3D%2222%22%20fill%3D%22%2364748B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3ESentry%20%2F%20Datadog%20Exception%20Ingest%20%E2%80%94%20Unhandled%20NoneType%20Crash%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Error%20Alert%20Banner%20--%3E%0A%20%20%3Crect%20x%3D%2220%22%20y%3D%2252%22%20width%3D%22560%22%20height%3D%2252%22%20rx%3D%226%22%20fill%3D%22%23450A0A%22%20stroke%3D%22%23DC2626%22%2F%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%2274%22%20fill%3D%22%23F87171%22%20font-family%3D%22monospace%22%20font-size%3D%2213%22%20font-weight%3D%22bold%22%3EAttributeError%3A%20'NoneType'%20object%20has%20no%20attribute%20'get'%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%2292%22%20fill%3D%22%23FECACA%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3Eservices.analytics_pipeline%20in%20process_event_batch%20at%20line%2078%3C%2Ftext%3E%0A%0A%20%20%3C!--%20Code%20Context%20--%3E%0A%20%20%3Crect%20x%3D%2220%22%20y%3D%22115%22%20width%3D%22560%22%20height%3D%22155%22%20rx%3D%226%22%20fill%3D%22%230F172A%22%20stroke%3D%22%23334155%22%2F%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22140%22%20fill%3D%22%2364748B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E76%3A%20%20%20for%20event%20in%20batch_records%3A%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22158%22%20fill%3D%22%2364748B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E77%3A%20%20%20%20%20%20%20payload%20%3D%20event.get(%22payload%22)%3C%2Ftext%3E%0A%20%20%0A%20%20%3Crect%20x%3D%2230%22%20y%3D%22166%22%20width%3D%22540%22%20height%3D%2224%22%20fill%3D%22%23991B1B%22%20fill-opacity%3D%220.35%22%2F%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22182%22%20fill%3D%22%23FCA5A5%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%20font-weight%3D%22bold%22%3E78%3A%20%20%20%20%20%20%20user_tier%20%3D%20payload%5B%22user_profile%22%5D.get(%22tier%22%2C%20%22free%22)%20%20%23%20CRASH%3A%20payload%5B'user_profile'%5D%20is%20None%3C%2Ftext%3E%0A%20%20%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22206%22%20fill%3D%22%2364748B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E79%3A%20%20%20%20%20%20%20analytics_sink.emit_metric(%22user.tier%22%2C%20user_tier)%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22226%22%20fill%3D%22%2364748B%22%20font-family%3D%22monospace%22%20font-size%3D%2211%22%3E80%3A%20%20%20%20%20%20%20processed_count%20%2B%3D%201%3C%2Ftext%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22250%22%20fill%3D%22%23F59E0B%22%20font-family%3D%22monospace%22%20font-size%3D%2210%22%3EImpact%3A%2014%2C200%20events%20dropped%20in%20last%2012%20minutes%20(Pipeline%20halted)%3C%2Ftext%3E%0A%0A%20%20%3Crect%20x%3D%2220%22%20y%3D%22285%22%20width%3D%22220%22%20height%3D%2230%22%20rx%3D%224%22%20fill%3D%22%232563EB%22%2F%3E%0A%20%20%3Ctext%20x%3D%2235%22%20y%3D%22304%22%20fill%3D%22%23FFFFFF%22%20font-family%3D%22sans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22bold%22%3ETrigger%20AI%20Automated%20Patch%3C%2Ftext%3E%0A%3C%2Fsvg%3E%0A","mockImageTitle":"Datadog / APM Exception Traceback (AttributeError: NoneType)","logs":"Traceback (most recent call last):\n  File \"/app/services/analytics_pipeline.py\", line 78, in process_event_batch\n    user_tier = payload[\"user_profile\"].get(\"tier\", \"free\")\nAttributeError: 'NoneType' object has no attribute 'get'\n  During handling of the above exception, another exception occurred:\n  File \"/app/workers/ingest_worker.py\", line 34, in run_loop\n    task.fail_silently()\n[ERROR] Worker pool worker-3 halted unexpectedly. 14,200 events queued.","buggyCode":"# Buggy Analytics Pipeline: Unsafe nested dictionary access on optional fields\nfrom typing import Dict, Any, List\n\ndef process_event_batch(batch_records: List[Dict[str, Any]]) -> int:\n    processed_count = 0\n    \n    for event in batch_records:\n        payload = event.get(\"payload\", {})\n        \n        # BUG: When user is anonymous, payload[\"user_profile\"] is None (not a dict)\n        # Calling .get() directly on None triggers AttributeError: 'NoneType' has no attribute 'get'\n        user_tier = payload[\"user_profile\"].get(\"tier\", \"free\")\n        \n        print(f\"Emitting metric for tier: {user_tier}\")\n        processed_count += 1\n        \n    return processed_count","patchedCode":"# Patched Analytics Pipeline: Safe Chaining & Defensive Fallbacks\nfrom typing import Dict, Any, List\n\ndef process_event_batch(batch_records: List[Dict[str, Any]]) -> int:\n    processed_count = 0\n    \n    for event in batch_records:\n        payload = event.get(\"payload\") or {}\n        \n        # FIX: Guard against NoneType user_profile via safe dictionary fallback\n        user_profile = payload.get(\"user_profile\") or {}\n        user_tier = user_profile.get(\"tier\", \"free\")\n        \n        print(f\"Safely emitting metric for tier: {user_tier}\")\n        processed_count += 1\n        \n    return processed_count","memoryRegisters":[{"name":"payload[\"user_profile\"]","address":"0x7f8841a0e280","buggyValue":"None (NoneType instance)","patchedValue":"{} (Safe empty dict fallback)","status":"VIOLATION","description":"Object reference in Python heap missing dict method table."},{"name":"user_tier","address":"0x7f8841a0e3f0","buggyValue":"UNRESOLVED (CRASH ON DEREF)","patchedValue":"\"free\" (str primitive)","status":"MUTATED","description":"Target variable evaluated safely without throwing exception."}],"executionTrace":[{"step":1,"instruction":"payload.get(\"user_profile\")","location":"analytics_pipeline.py:77","state":"NORMAL","detail":"Key lookup in Python dict succeeds and returns None object."},{"step":2,"instruction":"LOAD_METHOD \"get\" on NoneType","location":"analytics_pipeline.py:78","state":"FAULT","detail":"Original: tp_getattr on PyNone_Type fails. AttributeError raised into frame."},{"step":3,"instruction":"JUMP_IF_TRUE_OR_POP {}","location":"analytics_pipeline.py:10","state":"RECOVERED","detail":"Patched: Short-circuit \"or\" evaluates Falsey None to fallback empty dict."}]}};
+
+    let currentMode = 'web';
+    let currentPresetKey = '1: UI Flexbox Collision';
+    let activeBugReport = PRESETS[currentPresetKey];
+    let isShowingPatchedPreview = true;
+
+    // DOM Elements
+    const demoSelect = document.getElementById('demo-select');
+    const tabWeb = document.getElementById('tab-web');
+    const tabSystems = document.getElementById('tab-systems');
+    const inputLangBadge = document.getElementById('input-lang-badge');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const dropzoneEmpty = document.getElementById('dropzone-empty');
+    const dropzonePreviewContainer = document.getElementById('dropzone-preview-container');
+    const imagePreview = document.getElementById('image-preview');
+    const imageTitle = document.getElementById('image-title');
+    const btnRemoveImage = document.getElementById('btn-remove-image');
+    const inputLogs = document.getElementById('input-logs');
+    const inputCode = document.getElementById('input-code');
+    const codeStats = document.getElementById('code-stats');
+    const btnClearLogs = document.getElementById('btn-clear-logs');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const btnAnalyzeText = document.getElementById('btn-analyze-text');
+    const reasoningContainer = document.getElementById('reasoning-container');
+    const reasoningProgressBar = document.getElementById('reasoning-progress-bar');
+    const reasoningPhasePercent = document.getElementById('reasoning-phase-percent');
+    const reasoningStepText = document.getElementById('reasoning-step-text');
+    const severityBadge = document.getElementById('severity-badge');
+    const bugFilename = document.getElementById('bug-filename');
+    const bugCategory = document.getElementById('bug-category');
+    const bugConfidence = document.getElementById('bug-confidence');
+    const bugFixTime = document.getElementById('bug-fixtime');
+    const bugRootCause = document.getElementById('bug-rootcause');
+    const bugRemedy = document.getElementById('bug-remedy');
+    const diffContainer = document.getElementById('diff-container');
+    const diffStats = document.getElementById('diff-stats');
+    const btnCopyPatch = document.getElementById('btn-copy-patch');
+    const btnCopyText = document.getElementById('btn-copy-text');
+    const btnApplyPatch = document.getElementById('btn-apply-patch');
+    const verificationTitle = document.getElementById('verification-title');
+    const uiPreviewControls = document.getElementById('ui-preview-controls');
+    const btnTogglePatched = document.getElementById('btn-toggle-patched');
+    const btnToggleBuggy = document.getElementById('btn-toggle-buggy');
+    const iframeContainer = document.getElementById('iframe-container');
+    const sandboxIframe = document.getElementById('sandbox-iframe');
+    const systemsContainer = document.getElementById('systems-container');
+    const memoryTableBody = document.getElementById('memory-table-body');
+    const traceStepsContainer = document.getElementById('trace-steps-container');
+    const btnExportStandalone = document.getElementById('btn-export-standalone');
+
+    // Initialize Lucide icons
+    function refreshIcons() {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    // Line by Line Diff Engine
+    function computeDiff(original, patched) {
+      const origLines = original.split('\n');
+      const patchLines = patched.split('\n');
+      const m = origLines.length;
+      const n = patchLines.length;
+      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
+      for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+          if (origLines[i] === patchLines[j]) {
+            dp[i + 1][j + 1] = dp[i][j] + 1;
+          } else {
+            dp[i + 1][j + 1] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+          }
+        }
+      }
+
+      let i = m;
+      let j = n;
+      const raw = [];
+
+      while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && origLines[i - 1] === patchLines[j - 1]) {
+          raw.push({ type: 'unchanged', origNum: i, patchNum: j, content: origLines[i - 1] });
+          i--;
+          j--;
+        } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+          raw.push({ type: 'added', patchNum: j, content: patchLines[j - 1] });
+          j--;
+        } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
+          raw.push({ type: 'removed', origNum: i, content: origLines[i - 1] });
+          i--;
+        }
+      }
+
+      const lines = raw.reverse();
+      let additions = 0;
+      let deletions = 0;
+      lines.forEach(l => {
+        if (l.type === 'added') additions++;
+        if (l.type === 'removed') deletions++;
+      });
+
+      return { lines, stats: { additions, deletions, totalLines: lines.length } };
+    }
+
+    function renderDiff(original, patched) {
+      const diff = computeDiff(original, patched);
+      diffStats.innerHTML = '<span class="text-emerald-400">+' + diff.stats.additions + '</span> / <span class="text-rose-400">-' + diff.stats.deletions + '</span>';
+
+      diffContainer.innerHTML = '';
+      diff.lines.forEach((line) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-start gap-2 py-0.5 px-2 rounded font-mono text-[11px] leading-tight select-text ';
+        
+        let prefix = ' ';
+        let numText = (line.origNum || ' ') + ' ' + (line.patchNum || ' ');
+        if (line.type === 'added') {
+          row.className += 'bg-emerald-950/40 text-emerald-200 border-l-2 border-emerald-500';
+          prefix = '+';
+        } else if (line.type === 'removed') {
+          row.className += 'bg-rose-950/40 text-rose-300 border-l-2 border-rose-500 line-through opacity-75';
+          prefix = '-';
+        } else {
+          row.className += 'text-slate-400 hover:bg-slate-900/40';
+        }
+
+        const gutter = document.createElement('span');
+        gutter.className = 'w-12 shrink-0 text-[10px] text-slate-500 text-right select-none';
+        gutter.textContent = (line.origNum || '') + ' ' + (line.patchNum || '');
+
+        const sign = document.createElement('span');
+        sign.className = 'w-3 shrink-0 font-bold select-none ' + (line.type === 'added' ? 'text-emerald-400' : line.type === 'removed' ? 'text-rose-400' : 'text-slate-600');
+        sign.textContent = prefix;
+
+        const codeSpan = document.createElement('span');
+        codeSpan.className = 'flex-1 whitespace-pre-wrap break-all';
+        codeSpan.textContent = line.content;
+
+        row.appendChild(gutter);
+        row.appendChild(sign);
+        row.appendChild(codeSpan);
+        diffContainer.appendChild(row);
+      });
+    }
+
+    function updateCodeStats() {
+      const lines = inputCode.value.split('\n').length;
+      codeStats.textContent = lines + ' lines';
+    }
+
+    // Load preset into UI
+    function loadPreset(presetKey) {
+      const data = PRESETS[presetKey];
+      if (!data) return;
+      activeBugReport = data;
+      currentPresetKey = presetKey;
+      demoSelect.value = presetKey;
+
+      // Set mode
+      setMode(data.mode);
+
+      // Populate inputs
+      inputLogs.value = data.logs;
+      inputCode.value = data.buggyCode;
+      updateCodeStats();
+
+      // Populate mock image
+      if (data.mockImageUrl) {
+        imagePreview.src = data.mockImageUrl;
+        imageTitle.textContent = data.mockImageTitle || 'Screenshot Artifact';
+        dropzoneEmpty.classList.add('hidden');
+        dropzonePreviewContainer.classList.remove('hidden');
+      } else {
+        dropzoneEmpty.classList.remove('hidden');
+        dropzonePreviewContainer.classList.add('hidden');
+      }
+
+      // Populate outputs
+      severityBadge.textContent = data.severity;
+      if (data.severity === 'CRITICAL') {
+        severityBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/40';
+      } else if (data.severity === 'HIGH') {
+        severityBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40';
+      } else {
+        severityBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/40';
+      }
+
+      bugFilename.textContent = data.filename;
+      bugCategory.textContent = data.category;
+      bugConfidence.textContent = data.confidence + '%';
+      bugFixTime.textContent = data.estimatedFixTime;
+      bugRootCause.textContent = data.rootCause;
+      bugRemedy.textContent = data.remedySummary;
+
+      renderDiff(data.buggyCode, data.patchedCode);
+      updateVerificationPanel();
+      refreshIcons();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      if (mode === 'web') {
+        tabWeb.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-sm shadow-indigo-500/10';
+        tabSystems.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent';
+        inputLangBadge.textContent = 'HTML / CSS / JS';
+        verificationTitle.textContent = 'Dynamic Sandboxed UI Verification';
+        uiPreviewControls.classList.remove('hidden');
+        iframeContainer.classList.remove('hidden');
+        systemsContainer.classList.add('hidden');
+      } else {
+        tabSystems.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 shadow-sm shadow-emerald-500/10';
+        tabWeb.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent';
+        inputLangBadge.textContent = activeBugReport.language.toUpperCase() + ' / Systems';
+        verificationTitle.textContent = 'Hardware Memory & Instruction Trace';
+        uiPreviewControls.classList.add('hidden');
+        iframeContainer.classList.add('hidden');
+        systemsContainer.classList.remove('hidden');
+      }
+      updateVerificationPanel();
+      refreshIcons();
+    }
+
+    function updateVerificationPanel() {
+      if (currentMode === 'web') {
+        const htmlContent = isShowingPatchedPreview
+          ? (activeBugReport.interactivePatchedHtml || activeBugReport.patchedCode)
+          : (activeBugReport.interactiveBuggyHtml || activeBugReport.buggyCode);
+        
+        sandboxIframe.srcdoc = htmlContent;
+        if (isShowingPatchedPreview) {
+          btnTogglePatched.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+          btnToggleBuggy.className = 'px-2 py-0.5 rounded text-[10px] font-semibold text-slate-400 hover:text-slate-200 bg-slate-800';
+        } else {
+          btnToggleBuggy.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+          btnTogglePatched.className = 'px-2 py-0.5 rounded text-[10px] font-semibold text-slate-400 hover:text-slate-200 bg-slate-800';
+        }
+      } else {
+        // Systems mode: Populate memory table
+        const registers = activeBugReport.memoryRegisters || [];
+        memoryTableBody.innerHTML = '';
+        registers.forEach(reg => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-900/60';
+          const statusClass = reg.status === 'VIOLATION' ? 'text-rose-400 bg-rose-500/10' : reg.status === 'SAFE' ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10';
+          tr.innerHTML = '<td class="p-2 font-bold text-slate-200">' + reg.name + '</td>' +
+            '<td class="p-2 text-slate-400">' + reg.address + '</td>' +
+            '<td class="p-2 text-rose-300 font-semibold">' + reg.buggyValue + '</td>' +
+            '<td class="p-2 text-emerald-300 font-semibold">' + reg.patchedValue + '</td>' +
+            '<td class="p-2"><span class="px-2 py-0.5 rounded text-[9px] font-bold ' + statusClass + '">' + reg.status + '</span></td>';
+          memoryTableBody.appendChild(tr);
+        });
+
+        // Trace steps
+        const steps = activeBugReport.executionTrace || [];
+        traceStepsContainer.innerHTML = '';
+        steps.forEach(step => {
+          const div = document.createElement('div');
+          const badgeClass = step.state === 'FAULT' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
+                             step.state === 'RECOVERED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                             step.state === 'WARN' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                             'bg-slate-800 text-slate-300 border-slate-700';
+          div.className = 'flex items-center gap-2 p-1.5 rounded bg-slate-900 border border-slate-800/80';
+          div.innerHTML = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold border ' + badgeClass + '">#' + step.step + ' ' + step.state + '</span>' +
+            '<span class="text-slate-200 font-bold">' + step.instruction + '</span>' +
+            '<span class="text-slate-500 text-[9px]">(' + step.location + ')</span>' +
+            '<span class="text-slate-400 ml-auto text-[9px] truncate max-w-[200px]">' + step.detail + '</span>';
+          traceStepsContainer.appendChild(div);
+        });
+      }
+    }
+
+    // Trigger analysis with multi-step reasoning animation
+    function triggerAnalysis() {
+      btnAnalyze.disabled = true;
+      btnAnalyzeText.textContent = 'Reasoning in progress...';
+      reasoningContainer.classList.remove('hidden');
+
+      const steps = [
+        { progress: 20, text: '1. Ingesting visual artifacts & OCR telemetry...' },
+        { progress: 45, text: '2. Parsing AST structure & control flow graphs...' },
+        { progress: 70, text: '3. Detecting memory violation & CSS collision bounds...' },
+        { progress: 90, text: '4. Synthesizing minimal non-breaking refactor patch...' },
+        { progress: 100, text: '5. Verification simulation passed! Invariant proofs satisfied.' },
+      ];
+
+      let stepIndex = 0;
+      const interval = setInterval(() => {
+        if (stepIndex < steps.length) {
+          const current = steps[stepIndex];
+          reasoningProgressBar.style.width = current.progress + '%';
+          reasoningPhasePercent.textContent = current.progress + '%';
+          reasoningStepText.textContent = current.text;
+          stepIndex++;
+        } else {
+          clearInterval(interval);
+          setTimeout(() => {
+            btnAnalyze.disabled = false;
+            btnAnalyzeText.textContent = 'Analyze & Fix Bug';
+            reasoningContainer.classList.add('hidden');
+            renderDiff(inputCode.value, activeBugReport.patchedCode);
+            isShowingPatchedPreview = true;
+            updateVerificationPanel();
+            refreshIcons();
+          }, 400);
+        }
+      }, 350);
+    }
+
+    // Event Listeners
+    demoSelect.addEventListener('change', (e) => loadPreset(e.target.value));
+    tabWeb.addEventListener('click', () => {
+      setMode('web');
+      if (currentPresetKey !== '1: UI Flexbox Collision') {
+        loadPreset('1: UI Flexbox Collision');
+      }
+    });
+    tabSystems.addEventListener('click', () => {
+      setMode('systems');
+      if (currentPresetKey === '1: UI Flexbox Collision') {
+        loadPreset('2: C++ Pointer Segfault');
+      }
+    });
+
+    btnTogglePatched.addEventListener('click', () => {
+      isShowingPatchedPreview = true;
+      updateVerificationPanel();
+    });
+    btnToggleBuggy.addEventListener('click', () => {
+      isShowingPatchedPreview = false;
+      updateVerificationPanel();
+    });
+
+    btnAnalyze.addEventListener('click', triggerAnalysis);
+    btnClearLogs.addEventListener('click', () => { inputLogs.value = ''; });
+    inputCode.addEventListener('input', updateCodeStats);
+
+    btnCopyPatch.addEventListener('click', () => {
+      navigator.clipboard.writeText(activeBugReport.patchedCode);
+      btnCopyText.textContent = 'Copied!';
+      setTimeout(() => { btnCopyText.textContent = 'Copy Patch'; }, 2000);
+    });
+
+    btnApplyPatch.addEventListener('click', () => {
+      inputCode.value = activeBugReport.patchedCode;
+      updateCodeStats();
+      renderDiff(activeBugReport.buggyCode, activeBugReport.patchedCode);
+    });
+
+    // Image Upload & Paste
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          imagePreview.src = event.target.result;
+          imageTitle.textContent = file.name;
+          dropzoneEmpty.classList.add('hidden');
+          dropzonePreviewContainer.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    btnRemoveImage.addEventListener('click', (e) => {
+      e.stopPropagation();
+      imagePreview.src = '';
+      dropzonePreviewContainer.classList.add('hidden');
+      dropzoneEmpty.classList.remove('hidden');
+      fileInput.value = '';
+    });
+
+    window.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (const item of items) {
+        if (item.type.indexOf('image') === 0) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            imagePreview.src = event.target.result;
+            imageTitle.textContent = 'Pasted Screenshot (' + new Date().toLocaleTimeString() + ')';
+            dropzoneEmpty.classList.add('hidden');
+            dropzonePreviewContainer.classList.remove('hidden');
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    });
+
+    // Export Standalone Single-File HTML download
+    btnExportStandalone.addEventListener('click', () => {
+      const htmlContent = document.documentElement.outerHTML;
+      const blob = new Blob(['<!DOCTYPE html>\n' + htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'BugSnap-Universal-AI-Debugger.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Initial Load
+    loadPreset('1: UI Flexbox Collision');
+  </script>
+</body>
+</html>
